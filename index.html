@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prochains passages</title>
+  <style>
+    /* ============================================
+       PERSONNALISATION VISUELLE
+       Modifiez les couleurs, tailles, polices ici
+       ============================================ */
+    :root {
+      --bg-color: #1a1a2e;        /* Fond de page */
+      --card-bg: #16213e;          /* Fond des cartes */
+      --text-color: #e0e0e0;       /* Texte principal */
+      --accent-color: #0f3460;     /* Couleur d'en-tête */
+      --highlight-color: #e94560;  /* Couleur d'accentuation (temps courts) */
+      --success-color: #4ecca3;    /* Couleur pour "à l'approche" */
+      --font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      --refresh-interval: 60;      /* En secondes (aussi modifié dans le JS) */
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-family: var(--font-family);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 1.8rem;
+    }
+
+    .last-update {
+      text-align: center;
+      font-size: 0.85rem;
+      opacity: 0.6;
+      margin-bottom: 20px;
+    }
+
+    .stop-section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stop-section h2 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--accent-color);
+      border-radius: 8px;
+      display: inline-block;
+    }
+
+    .passage {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .passage:last-child { border-bottom: none; }
+
+    .ligne-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      min-width: 50px;
+      text-align: center;
+      background: var(--accent-color);
+      color: #fff;
+    }
+
+    .direction {
+      flex: 1;
+      margin: 0 12px;
+      font-size: 0.95rem;
+    }
+
+    .temps {
+      font-size: 1.3rem;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .temps.imminent { color: var(--highlight-color); }
+    .temps.approche  { color: var(--success-color); }
+
+    .erreur {
+      text-align: center;
+      padding: 40px;
+      color: var(--highlight-color);
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🚍 Prochains passages</h1>
+  <div class="last-update" id="lastUpdate"></div>
+  <div id="container"></div>
+
+  <script>
+    // =============================================
+    //  ⚙️  CONFIGURATION — MODIFIEZ ICI
+    // =============================================
+
+    const CONFIG = {
+
+      // 1. Votre clé API PRIM (obligatoire)
+      apiKey: '4c48fb94643cc179612c1370dfaf99f54dfa58d2aac2a4be4f468f5c',
+
+      // 2. Liste des arrêts à surveiller
+      //    Ajoutez autant d'objets que vous avez d'arrêts à afficher.
+      //    - stopId   : identifiant MonitoringRef de l'arrêt
+      //    - label    : nom affiché sur le tableau de bord
+      //    - lineId   : (optionnel) filtre sur une ligne précise
+      arrets: [
+        {
+          stopId: 'STIF:StopPoint:Q:22021:',   // Exemple : arrêt République
+          label: 'Pereire — Métro 3',
+          lineId: null                           // null = toutes les lignes
+        },
+        {
+          stopId: 'STIF:StopPoint:Q:5765:',    // Exemple : un arrêt de bus
+          label: 'Mairie — Bus 96',
+          lineId: 'STIF:Line::C01742:'          // Filtre sur la ligne 96
+        }
+        // ➕ Ajoutez d'autres arrêts ici en dupliquant le bloc ci-dessus
+      ],
+
+      // 3. Nombre max de prochains passages affichés par arrêt
+      maxPassages: 2,
+
+      // 4. Intervalle de rafraîchissement en millisecondes
+      //    60000 = 60 secondes
+      refreshInterval: 60000
+    };
+
+    // =============================================
+    //  🔧  LOGIQUE — Pas besoin de modifier dessous
+    // =============================================
+
+    const container = document.getElementById('container');
+    const lastUpdateEl = document.getElementById('lastUpdate');
+
+    /**
+     * Interroge l'API PRIM pour un arrêt donné
+     * Documentation : https://prim.iledefrance-mobilites.fr/apis/idfm-ivtr-requete_globale
+     */
+    async function fetchPassages(arret) {
+      // Construction de l'URL de l'API SIRI "Stop Monitoring"
+      let url = 'https://prim.iledefrance-mobilites.fr/marketplace/'
+              + 'stop-monitoring?MonitoringRef='
+              + encodeURIComponent(arret.stopId);
+
+      // Filtre optionnel sur une ligne
+      if (arret.lineId) {
+        url += '&LineRef=' + encodeURIComponent(arret.lineId);
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'apikey': CONFIG.apiKey        // En-tête d'authentification PRIM
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP ${response.status} pour ${arret.label}`);
+      }
+
+      const data = await response.json();
+
+      // Navigation dans la structure SIRI
+      const deliveries = data?.Siri?.ServiceDelivery
+                            ?.StopMonitoringDelivery ?? [];
+
+      const visits = [];
+      for (const delivery of deliveries) {
+        const mvj = delivery?.MonitoredStopVisit ?? [];
+        visits.push(...mvj);
+      }
+
+      return visits;
+    }
+
+    /**
+     * Calcule le temps restant avant le passage
+     */
+    function tempsRestant(expectedTime) {
+      const now = new Date();
+      const expected = new Date(expectedTime);
+      const diffMs = expected - now;
+      const diffMin = Math.round(diffMs / 60000);
+
+      if (diffMin <= 0) return { text: 'À quai', classe: 'approche' };
+      if (diffMin <= 2) return { text: `${diffMin} min`, classe: 'imminent' };
+      if (diffMin < 60) return { text: `${diffMin} min`, classe: '' };
+
+      const h = Math.floor(diffMin / 60);
+      const m = diffMin % 60;
+      return { text: `${h}h${m.toString().padStart(2, '0')}`, classe: '' };
+    }
+
+    /**
+     * Extrait les infos utiles d'un MonitoredStopVisit
+     */
+    function parseVisit(visit) {
+      const mvj = visit?.MonitoredVehicleJourney ?? {};
+      const call = mvj?.MonitoredCall ?? {};
+
+      // Nom de la ligne (ex. "3", "96", "RER A")
+      const lineName = mvj?.PublishedLineName?.[0]?.value
+                    ?? mvj?.LineRef?.value
+                    ?? '?';
+
+      // Direction / destination
+      const destination = mvj?.DestinationName?.[0]?.value
+                       ?? call?.DestinationDisplay?.[0]?.value
+                       ?? 'Direction inconnue';
+
+      // Heure d'arrivée attendue
+      const expectedTime = call?.ExpectedArrivalTime
+                        ?? call?.ExpectedDepartureTime
+                        ?? call?.AimedArrivalTime
+                        ?? null;
+
+      return { lineName, destination, expectedTime };
+    }
+
+    /**
+     * Met à jour l'affichage complet
+     */
+    async function updateAll() {
+      let html = '';
+
+      for (const arret of CONFIG.arrets) {
+        html += `<div class="stop-section"><h2>📍 ${arret.label}</h2>`;
+
+        try {
+          const visits = await fetchPassages(arret);
+
+          if (visits.length === 0) {
+            html += '<div class="passage">Aucun passage prévu</div>';
+          } else {
+            // Trier par heure d'arrivée et limiter
+            const parsed = visits
+              .map(parseVisit)
+              .filter(p => p.expectedTime !== null)
+              .sort((a, b) => new Date(a.expectedTime) - new Date(b.expectedTime))
+              .slice(0, CONFIG.maxPassages);
+
+            for (const p of parsed) {
+              const t = tempsRestant(p.expectedTime);
+              html += `
+                <div class="passage">
+                  <span class="ligne-badge">${p.lineName}</span>
+                  <span class="direction">${p.destination}</span>
+                  <span class="temps ${t.classe}">${t.text}</span>
+                </div>`;
+            }
+          }
+        } catch (err) {
+          html += `<div class="erreur">⚠️ ${err.message}</div>`;
+          console.error(err);
+        }
+
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+
+      // Affiche l'heure de dernière mise à jour
+      const now = new Date();
+      lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
+    }
+
+    // =============================================
+    //  ▶️  DÉMARRAGE
+    // =============================================
+
+    // Premier chargement immédiat
+    updateAll();
+
+    // Puis rafraîchissement toutes les X secondes
+    setInterval(updateAll, CONFIG.refreshInterval);
+  </script>
+</body>
+</html>

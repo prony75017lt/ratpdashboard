@@ -132,8 +132,13 @@
           lineId: null                           // null = toutes les lignes
         },
         {
-          stopId: 'STIF:StopPoint:Q:5765:',    // Exemple : un arrêt de bus
-          label: 'Mairie — Bus 96',
+          stopId: 'STIF:Line::C01265:',    // Exemple : un arrêt de bus
+          label: 'Ligne 93 Direction Fénelon — Bus 96',
+          lineId: 'STIF:Line::C01742:'          // Filtre sur la ligne 96
+        },
+        {
+          stopId: 'STIF:Line::C01264:',    // Exemple : un arrêt de bus
+          label: 'Ligne 92 Direction Etoile',
           lineId: 'STIF:Line::C01742:'          // Filtre sur la ligne 96
         }
         // ➕ Ajoutez d'autres arrêts ici en dupliquant le bloc ci-dessus

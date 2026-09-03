@@ -126,16 +126,20 @@
       //    - label    : nom affiché sur le tableau de bord
       //    - lineId   : (optionnel) filtre sur une ligne précise
       arrets: [
-
+        {
+          stopId: 'STIF:StopPoint:Q:22021:',   // Exemple : arrêt République
+          label: 'Pereire — Métro 3',
+          lineId: null                           // null = toutes les lignes
+        },
         {
           stopId: 'STIF:StopArea:SP:44320:',    // Exemple : un arrêt de bus
           label: 'Ligne 93 Direction Fénelon',
           lineId: 'STIF:Line::C01265:'          // Filtre sur la ligne 93
         },
         {
-          stopId: 'STIF:StopPoint:Q:44311:',    // Exemple : un arrêt de bus
+          stopId: 'STIF:StopPoint:Q:71453:',    // Exemple : un arrêt de bus
           label: 'Lignes 92 Direction Etoile',
-          lineId: 'STIF:Line::C01264:'
+          lineId: 'STIF:Line::C01123:'
         }
         // ➕ Ajoutez d'autres arrêts ici en dupliquant le bloc ci-dessus
       ],

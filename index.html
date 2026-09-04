@@ -269,56 +269,63 @@ async function fetchPassages(arret) {
      * Met à jour l'affichage complet
      */
 async function updateAll() {
-   let html = '';
+  container.innerHTML = ''; // Vider l'écran
 
-   for (const arret of CONFIG.arrets) {
-     html += `<div class="stop-section"><h2>📍 ${arret.label}</h2>`;
+  for (const arret of CONFIG.arrets) {
+    // Créer la section immédiatement
+    const section = document.createElement('div');
+    section.className = 'stop-section';
+    section.innerHTML = `<h2>📍 ${arret.label}</h2>
+      <div class="passage" style="opacity:0.5">Chargement…</div>`;
+    container.appendChild(section);
 
-     try {
-       const visits = await fetchPassages(arret);
+    try {
+      const visits = await fetchPassages(arret);
 
-       if (visits.length === 0) {
-         html += '<div class="passage">Aucun passage prévu</div>';
-       } else {
-         const parsed = visits
-           .map(parseVisit)
-           .filter(p => p.expectedTime !== null)
-           .filter(p => {
-             if (!arret.excludeDestinations) return true;
-             return !arret.excludeDestinations.some(
-               excl => p.destination.includes(excl)
-             );
-           })
-           .sort((a, b) => new Date(a.expectedTime) - new Date(b.expectedTime))
-           .slice(0, CONFIG.maxPassages);
+      let innerHtml = `<h2>📍 ${arret.label}</h2>`;
 
-         for (const p of parsed) {
-           const t = tempsRestant(p.expectedTime);
-           html += `
-             <div class="passage">
-               <span class="ligne-badge">${p.lineName}</span>
-               <span class="direction">${p.destination}</span>
-               <span class="temps ${t.classe}">${t.text}</span>
-             </div>`;
-         }
-       }
-     } catch (err) {
-       html += `<div class="erreur">⚠️ ${err.message}</div>`;
-       console.error(err);
-     }
+      if (visits.length === 0) {
+        innerHtml += '<div class="passage">Aucun passage prévu</div>';
+      } else {
+        const parsed = visits
+          .map(parseVisit)
+          .filter(p => p.expectedTime !== null)
+          .filter(p => {
+            if (!arret.excludeDestinations) return true;
+            return !arret.excludeDestinations.some(
+              excl => p.destination.includes(excl)
+            );
+          })
+          .sort((a, b) => new Date(a.expectedTime) - new Date(b.expectedTime))
+          .slice(0, CONFIG.maxPassages);
 
-     html += '</div>';
+        for (const p of parsed) {
+          const t = tempsRestant(p.expectedTime);
+          innerHtml += `
+            <div class="passage">
+              <span class="ligne-badge">${p.lineName}</span>
+              <span class="direction">${p.destination}</span>
+              <span class="temps ${t.classe}">${t.text}</span>
+            </div>`;
+        }
+      }
 
-     // Pause de 4 secondes entre chaque appel pour éviter le 429
-     await sleep(4000);
-   }
+      // Mise à jour immédiate de cette section
+      section.innerHTML = innerHtml;
 
-   container.innerHTML = html;
+    } catch (err) {
+      section.innerHTML = `<h2>📍 ${arret.label}</h2>
+        <div class="erreur">⚠️ ${err.message}</div>`;
+      console.error(err);
+    }
 
-   const now = new Date();
-   lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
- }
+    // Pause entre les appels
+    await sleep(1500);
+  }
 
+  const now = new Date();
+  lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
+}
     // =============================================
     //  ▶️  DÉMARRAGE
     // =============================================

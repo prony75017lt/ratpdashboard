@@ -1,23 +1,29 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data: https://azure.assets.harvey.ai; connect-src 'none'; webrtc 'block'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prochains passages</title>
+  <title>🚍 Prochains passages</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* ============================================
-       PERSONNALISATION VISUELLE
-       Modifiez les couleurs, tailles, polices ici
+       THÈME RATP / LUMIPLAN — DARK MODE
        ============================================ */
     :root {
-      --bg-color: #1a1a2e;        /* Fond de page */
-      --card-bg: #16213e;          /* Fond des cartes */
-      --text-color: #e0e0e0;       /* Texte principal */
-      --accent-color: #0f3460;     /* Couleur d'en-tête */
-      --highlight-color: #e94560;  /* Couleur d'accentuation (temps courts) */
-      --success-color: #4ecca3;    /* Couleur pour "à l'approche" */
-      --font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-      --refresh-interval: 90;      /* En secondes (aussi modifié dans le JS) */
+      --bg-color: #1A1A2E;
+      --card-bg: #16213E;
+      --text-color: #E8E8F0;
+      --text-muted: #8888AA;
+      --accent-color: #0f3460;
+      --color-imminent: #E94560;
+      --color-soon: #FFA500;
+      --color-comfortable: #4ECCA3;
+      --font-family: 'Quicksand', 'Segoe UI', Roboto, Arial, sans-serif;
+      --radius: 14px;
+      --refresh-interval: 90;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -26,237 +32,365 @@
       background: var(--bg-color);
       color: var(--text-color);
       font-family: var(--font-family);
-      padding: 20px;
+      padding: 16px 16px 32px;
       min-height: 100vh;
     }
 
-    h1 {
+    /* ---- PROGRESS BAR ---- */
+    #progressBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--color-comfortable), #7EC8E3, var(--color-soon));
+      z-index: 1000;
+      transition: width 0.3s linear;
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* ---- HEADER ---- */
+    .header {
       text-align: center;
-      margin-bottom: 10px;
-      font-size: 1.8rem;
+      margin: 12px 0 20px;
+    }
+
+    .header h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #FFFFFF;
     }
 
     .last-update {
-      text-align: center;
-      font-size: 0.85rem;
-      opacity: 0.6;
-      margin-bottom: 20px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-weight: 500;
     }
 
+    /* ---- STOP SECTION CARD ---- */
     .stop-section {
       background: var(--card-bg);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
+      border-radius: var(--radius);
+      padding: 0;
+      margin-bottom: 18px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      border-left: 5px solid var(--accent-color);
+      transition: border-color 0.3s ease;
     }
 
-    .stop-section h2 {
-      font-size: 1.2rem;
-      margin-bottom: 12px;
-      padding: 8px 12px;
-      background: var(--accent-color);
-      border-radius: 8px;
-      display: inline-block;
+    .stop-header {
+      padding: 14px 18px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
 
+    .stop-header .mode-emoji {
+      font-size: 1.3rem;
+    }
+
+    /* ---- PASSAGE ROW ---- */
     .passage {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.2s ease;
     }
 
     .passage:last-child { border-bottom: none; }
 
-    .ligne-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 0.95rem;
-      min-width: 50px;
-      text-align: center;
-      background: var(--accent-color);
-      color: #fff;
+    .passage:hover {
+      background: rgba(255, 255, 255, 0.03);
     }
 
+    /* ---- LINE BADGE ---- */
+    .ligne-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      min-width: 48px;
+      text-align: center;
+      letter-spacing: 0.02em;
+      flex-shrink: 0;
+    }
+
+    /* ---- DIRECTION ---- */
     .direction {
       flex: 1;
-      margin: 0 12px;
-      font-size: 0.95rem;
-    }
-
-    .temps {
-      font-size: 1.3rem;
-      font-weight: bold;
+      margin: 0 14px;
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text-color);
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .temps.imminent { color: var(--highlight-color); }
-    .temps.approche  { color: var(--success-color); }
+    /* ---- TIME DISPLAY ---- */
+    .temps {
+      font-size: 1.6rem;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-width: 70px;
+      text-align: right;
+    }
 
+    .temps.comfortable { color: var(--color-comfortable); }
+    .temps.soon        { color: var(--color-soon); }
+    .temps.imminent    { color: var(--color-imminent); }
+    .temps.approche    { color: var(--color-comfortable); }
+
+    /* Pulsing "À quai" animation */
+    .temps.approche {
+      animation: pulse-aquai 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-aquai {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.55; transform: scale(1.06); }
+    }
+
+    /* ---- LOADING SHIMMER ---- */
+    .loading-placeholder {
+      padding: 14px 18px;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.95rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loading-placeholder::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 200%; height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.04) 40%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.04) 60%,
+        transparent 100%
+      );
+      animation: shimmer 1.8s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ---- ERROR ---- */
     .erreur {
       text-align: center;
-      padding: 40px;
-      color: var(--highlight-color);
-      font-size: 1.1rem;
+      padding: 16px 18px;
+      color: var(--color-imminent);
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    /* ---- NO DEPARTURES ---- */
+    .no-passage {
+      padding: 14px 18px;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.92rem;
+    }
+
+    /* ---- RESPONSIVE ---- */
+    @media (min-width: 600px) {
+      body {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 20px 24px 40px;
+      }
+      .header h1 { font-size: 2.1rem; }
+    }
+
+    @media (max-width: 380px) {
+      .direction { font-size: 0.82rem; margin: 0 8px; }
+      .temps { font-size: 1.3rem; min-width: 58px; }
+      .passage { padding: 10px 12px; }
+      .stop-header { padding: 12px 14px; font-size: 1rem; }
     }
   </style>
 </head>
 <body>
 
-  <h1>🚍 Prochains passages</h1>
-  <div class="last-update" id="lastUpdate"></div>
+  <div id="progressBar"></div>
+
+  <div class="header">
+    <h1>🚍 Prochains passages</h1>
+    <div class="last-update" id="lastUpdate"></div>
+  </div>
+
   <div id="container"></div>
 
   <script>
     // =============================================
-    //  ⚙️  CONFIGURATION — MODIFIEZ ICI
+    //  ⚙️  CONFIGURATION
     // =============================================
 
     const CONFIG = {
+      apiKey: 'pgpgISVffFr3QGGRo9w5JiP2ecn0DNOL',
 
-      // 1. Votre clé API PRIM (obligatoire)
-      apiKey: 'bKSXuKf3scUMbh0ufotHFTlMKiiEnnxf',
-
-      // 2. Liste des arrêts à surveiller
-      //    Ajoutez autant d'objets que vous avez d'arrêts à afficher.
-      //    - stopId   : identifiant MonitoringRef de l'arrêt
-      //    - label    : nom affiché sur le tableau de bord
-      //    - lineId   : (optionnel) filtre sur une ligne précise
       arrets: [
         {
-          stopId: 'STIF:StopPoint:Q:22021:',   // Exemple : arrêt République
+          stopId: 'STIF:StopPoint:Q:22021:',
           label: 'Pereire — Métro 3',
-          lineId: null                           // null = toutes les lignes
+          lineId: null
         },
         {
-          stopId: 'STIF:StopPoint:Q:471934:',    // Exemple : un arrêt de bus
+          stopId: 'STIF:StopPoint:Q:471934:',
           label: 'Ligne 93 Direction Fénelon',
-          lineId: 'STIF:Line::C01124:'          // Filtre sur la ligne 93
+          lineId: 'STIF:Line::C01124:'
         },
         {
-          stopId: 'STIF:StopPoint:SP:29156:',    // Exemple : un arrêt de bus
+          stopId: 'STIF:StopPoint:SP:29156:',
           label: 'Lignes 92 Direction Etoile',
           lineId: 'STIF:Line::C01123:'
         },
         {
-          stopId: 'STIF:StopArea:SP:44314:',   // ZdA de votre gare RER C
+          stopId: 'STIF:StopArea:SP:44314:',
           label: 'RER C — Direction Boulainvilliers',
-          lineId: 'STIF:Line::C01727:',          // Code ligne RER C
+          lineId: 'STIF:Line::C01727:',
           excludeDestinations: ['Pontoise', 'Ermont', 'Saint-Gratien', 'Épinay']
         }
-        // ➕ Ajoutez d'autres arrêts ici en dupliquant le bloc ci-dessus
       ],
 
-      // 3. Nombre max de prochains passages affichés par arrêt
       maxPassages: 3,
-
-      // 4. Intervalle de rafraîchissement en millisecondes
-      //    90000 = 90 secondes
-      refreshInterval: 90000
+      refreshInterval: 75000
     };
 
     // =============================================
-    //  🔧  LOGIQUE — Pas besoin de modifier dessous
+    //  🎨  LINE COLORS & MODE EMOJI
+    // =============================================
+
+    const LINE_COLORS = {
+      '3':       { bg: '#9B993A', text: '#FFFFFF' },
+      '92':      { bg: '#7EC8E3', text: '#FFFFFF' },
+      '93':      { bg: '#7EC8E3', text: '#FFFFFF' },
+      'C':       { bg: '#FFCD00', text: '#000000' },
+      default:   { bg: '#0f3460', text: '#FFFFFF' }
+    };
+
+    function getLineColor(lineName) {
+      return LINE_COLORS[lineName] || LINE_COLORS.default;
+    }
+
+    function getModeEmoji(label) {
+      if (label.toLowerCase().includes('métro'))  return '🚇';
+      if (label.toLowerCase().includes('rer'))    return '🚆';
+      return '🚌';
+    }
+
+    function getLineBorderColor(label) {
+      if (label.includes('Métro 3'))   return LINE_COLORS['3'].bg;
+      if (label.includes('92'))        return LINE_COLORS['92'].bg;
+      if (label.includes('93'))        return LINE_COLORS['93'].bg;
+      if (label.toLowerCase().includes('rer c')) return LINE_COLORS['C'].bg;
+      return LINE_COLORS.default.bg;
+    }
+
+    // =============================================
+    //  🔧  LOGIQUE
     // =============================================
 
     const container = document.getElementById('container');
     const lastUpdateEl = document.getElementById('lastUpdate');
-
-    /**
-     * Interroge l'API PRIM pour un arrêt donné
-     * Documentation : https://prim.iledefrance-mobilites.fr/apis/idfm-ivtr-requete_globale
-     */
+    const progressBar = document.getElementById('progressBar');
 
     function sleep(ms) {
-      // arrêt pour éviter erreur 429
       return new Promise(resolve => setTimeout(resolve, ms));
-    } 
-    
-async function fetchPassages(arret) {
-  let url = 'https://prim.iledefrance-mobilites.fr/marketplace/'
-    + 'stop-monitoring?MonitoringRef='
-    + encodeURIComponent(arret.stopId);
+    }
 
-  if (arret.lineId) {
-    url += '&LineRef=' + encodeURIComponent(arret.lineId);
-  }
+    async function fetchPassages(arret) {
+      let url = 'https://prim.iledefrance-mobilites.fr/marketplace/'
+        + 'stop-monitoring?MonitoringRef='
+        + encodeURIComponent(arret.stopId);
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'apikey': CONFIG.apiKey
+      if (arret.lineId) {
+        url += '&LineRef=' + encodeURIComponent(arret.lineId);
       }
-    });
 
-    // En cas de 429 : attendre puis réessayer
-    if (response.status === 429) {
-      const wait = (attempt + 1) * 5000;
-      console.warn(`429 pour ${arret.label}, réessai dans ${wait / 1000}s…`);
-      await sleep(wait);
-      continue;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+            'apikey': CONFIG.apiKey
+          }
+        });
+
+        if (response.status === 429) {
+          const wait = (attempt + 1) * 2500;
+          console.warn(`429 pour ${arret.label}, réessai dans ${wait / 1000}s…`);
+          await sleep(wait);
+          continue;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status} pour ${arret.label}`);
+        }
+
+        const data = await response.json();
+
+        const deliveries = data?.Siri?.ServiceDelivery
+          ?.StopMonitoringDelivery ?? [];
+
+        const visits = [];
+        for (const delivery of deliveries) {
+          const mvj = delivery?.MonitoredStopVisit ?? [];
+          visits.push(...mvj);
+        }
+
+        return visits;
+      }
+
+      throw new Error(`Erreur 429 persistante pour ${arret.label}`);
     }
 
-    if (!response.ok) {
-      throw new Error(`Erreur HTTP ${response.status} pour ${arret.label}`);
-    }
-
-    const data = await response.json();
-
-    const deliveries = data?.Siri?.ServiceDelivery
-      ?.StopMonitoringDelivery ?? [];
-
-    const visits = [];
-    for (const delivery of deliveries) {
-      const mvj = delivery?.MonitoredStopVisit ?? [];
-      visits.push(...mvj);
-    }
-
-    return visits;
-  }
-
-  throw new Error(`Erreur 429 persistante pour ${arret.label}`);
-}
-
-    /**
-     * Calcule le temps restant avant le passage
-     */
     function tempsRestant(expectedTime) {
       const now = new Date();
       const expected = new Date(expectedTime);
       const diffMs = expected - now;
       const diffMin = Math.round(diffMs / 60000);
 
-      if (diffMin <= 0) return { text: 'À quai', classe: 'approche' };
-      if (diffMin <= 2) return { text: `${diffMin} min`, classe: 'imminent' };
-      if (diffMin < 60) return { text: `${diffMin} min`, classe: '' };
+      if (diffMin <= 0)  return { text: 'À quai',  classe: 'approche' };
+      if (diffMin <= 2)  return { text: `${diffMin} min`, classe: 'imminent' };
+      if (diffMin <= 5)  return { text: `${diffMin} min`, classe: 'soon' };
+      if (diffMin < 60)  return { text: `${diffMin} min`, classe: 'comfortable' };
 
       const h = Math.floor(diffMin / 60);
       const m = diffMin % 60;
-      return { text: `${h}h${m.toString().padStart(2, '0')}`, classe: '' };
+      return { text: `${h}h${m.toString().padStart(2, '0')}`, classe: 'comfortable' };
     }
 
-    /**
-     * Extrait les infos utiles d'un MonitoredStopVisit
-     */
     function parseVisit(visit) {
       const mvj = visit?.MonitoredVehicleJourney ?? {};
       const call = mvj?.MonitoredCall ?? {};
 
-      // Nom de la ligne (ex. "3", "96", "RER A")
       const lineName = mvj?.PublishedLineName?.[0]?.value
                     ?? mvj?.LineRef?.value
                     ?? '?';
 
-      // Direction / destination
       const destination = mvj?.DestinationName?.[0]?.value
                        ?? call?.DestinationDisplay?.[0]?.value
                        ?? 'Direction inconnue';
 
-      // Heure d'arrivée attendue
       const expectedTime = call?.ExpectedArrivalTime
                         ?? call?.ExpectedDepartureTime
                         ?? call?.AimedArrivalTime
@@ -265,78 +399,120 @@ async function fetchPassages(arret) {
       return { lineName, destination, expectedTime };
     }
 
-    /**
-     * Met à jour l'affichage complet
-     */
-async function updateAll() {
-  container.innerHTML = ''; // Vider l'écran
+    // ---- PROGRESS BAR LOGIC ----
+    let progressAnimFrame = null;
+    let progressStart = 0;
 
-  for (const arret of CONFIG.arrets) {
-    // Créer la section immédiatement
-    const section = document.createElement('div');
-    section.className = 'stop-section';
-    section.innerHTML = `<h2>📍 ${arret.label}</h2>
-      <div class="passage" style="opacity:0.5">Chargement…</div>`;
-    container.appendChild(section);
+    function startProgressBar() {
+      progressStart = Date.now();
+      progressBar.style.transition = 'none';
+      progressBar.style.width = '0%';
 
-    try {
-      const visits = await fetchPassages(arret);
-
-      let innerHtml = `<h2>📍 ${arret.label}</h2>`;
-
-      if (visits.length === 0) {
-        innerHtml += '<div class="passage">Aucun passage prévu</div>';
-      } else {
-        const parsed = visits
-          .map(parseVisit)
-          .filter(p => p.expectedTime !== null)
-          .filter(p => {
-            if (!arret.excludeDestinations) return true;
-            return !arret.excludeDestinations.some(
-              excl => p.destination.includes(excl)
-            );
-          })
-          .sort((a, b) => new Date(a.expectedTime) - new Date(b.expectedTime))
-          .slice(0, CONFIG.maxPassages);
-
-        for (const p of parsed) {
-          const t = tempsRestant(p.expectedTime);
-          innerHtml += `
-            <div class="passage">
-              <span class="ligne-badge">${p.lineName}</span>
-              <span class="direction">${p.destination}</span>
-              <span class="temps ${t.classe}">${t.text}</span>
-            </div>`;
+      function tick() {
+        const elapsed = Date.now() - progressStart;
+        const pct = Math.min((elapsed / CONFIG.refreshInterval) * 100, 100);
+        progressBar.style.width = pct + '%';
+        if (pct < 100) {
+          progressAnimFrame = requestAnimationFrame(tick);
         }
       }
 
-      // Mise à jour immédiate de cette section
-      section.innerHTML = innerHtml;
-
-    } catch (err) {
-      section.innerHTML = `<h2>📍 ${arret.label}</h2>
-        <div class="erreur">⚠️ ${err.message}</div>`;
-      console.error(err);
+      if (progressAnimFrame) cancelAnimationFrame(progressAnimFrame);
+      progressAnimFrame = requestAnimationFrame(tick);
     }
 
-    // Pause entre les appels
-    await sleep(1500);
-  }
+    function resetProgressBar() {
+      if (progressAnimFrame) cancelAnimationFrame(progressAnimFrame);
+      progressBar.style.transition = 'width 0.3s ease';
+      progressBar.style.width = '0%';
+    }
 
-  const now = new Date();
-  lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
-}
+    // ---- UPDATE ALL ----
+    async function updateAll() {
+      resetProgressBar();
+      container.innerHTML = '';
+
+      for (const arret of CONFIG.arrets) {
+        const borderColor = getLineBorderColor(arret.label);
+        const emoji = getModeEmoji(arret.label);
+
+        const section = document.createElement('div');
+        section.className = 'stop-section';
+        section.style.borderLeftColor = borderColor;
+        section.innerHTML = `
+          <div class="stop-header">
+            <span class="mode-emoji">${emoji}</span>
+            <span>${arret.label}</span>
+          </div>
+          <div class="loading-placeholder">Chargement…</div>`;
+        container.appendChild(section);
+
+        try {
+          const visits = await fetchPassages(arret);
+
+          let innerHtml = `
+            <div class="stop-header">
+              <span class="mode-emoji">${emoji}</span>
+              <span>${arret.label}</span>
+            </div>`;
+
+          if (visits.length === 0) {
+            innerHtml += '<div class="no-passage">Aucun passage prévu</div>';
+          } else {
+            const parsed = visits
+              .map(parseVisit)
+              .filter(p => p.expectedTime !== null)
+              .filter(p => {
+                if (!arret.excludeDestinations) return true;
+                return !arret.excludeDestinations.some(
+                  excl => p.destination.includes(excl)
+                );
+              })
+              .sort((a, b) => new Date(a.expectedTime) - new Date(b.expectedTime))
+              .slice(0, CONFIG.maxPassages);
+
+            for (const p of parsed) {
+              const t = tempsRestant(p.expectedTime);
+              const c = getLineColor(p.lineName);
+              innerHtml += `
+                <div class="passage">
+                  <span class="ligne-badge" style="background:${c.bg};color:${c.text}">${p.lineName}</span>
+                  <span class="direction">${p.destination}</span>
+                  <span class="temps ${t.classe}">${t.text}</span>
+                </div>`;
+            }
+          }
+
+          section.innerHTML = innerHtml;
+
+        } catch (err) {
+          section.innerHTML = `
+            <div class="stop-header">
+              <span class="mode-emoji">${emoji}</span>
+              <span>${arret.label}</span>
+            </div>
+            <div class="erreur">⚠️ ${err.message}</div>`;
+          console.error(err);
+        }
+
+        await sleep(900);
+      }
+
+      const now = new Date();
+      lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
+      startProgressBar();
+    }
+
     // =============================================
     //  ▶️  DÉMARRAGE
     // =============================================
 
-  // Premier chargement, puis relance automatique après chaque cycle
-      async function loop() {
-        await updateAll();
-        setTimeout(loop, CONFIG.refreshInterval);
-      }
-      
-      loop();
+    async function loop() {
+      await updateAll();
+      setTimeout(loop, CONFIG.refreshInterval);
+    }
+
+    loop();
   </script>
 </body>
 </html>

@@ -17,7 +17,7 @@
       --highlight-color: #e94560;  /* Couleur d'accentuation (temps courts) */
       --success-color: #4ecca3;    /* Couleur pour "à l'approche" */
       --font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-      --refresh-interval: 60;      /* En secondes (aussi modifié dans le JS) */
+      --refresh-interval: 90;      /* En secondes (aussi modifié dans le JS) */
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -153,8 +153,8 @@
       maxPassages: 20,
 
       // 4. Intervalle de rafraîchissement en millisecondes
-      //    60000 = 60 secondes
-      refreshInterval: 60000
+      //    90000 = 90 secondes
+      refreshInterval: 90000
     };
 
     // =============================================
@@ -299,8 +299,8 @@ async function updateAll() {
 
      html += '</div>';
 
-     // Pause de 2 secondes entre chaque appel pour éviter le 429
-     await sleep(2000);
+     // Pause de 4 secondes entre chaque appel pour éviter le 429
+     await sleep(4000);
    }
 
    container.innerHTML = html;

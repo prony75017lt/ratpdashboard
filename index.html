@@ -342,7 +342,7 @@
         });
 
         if (response.status === 429) {
-          const wait = (attempt + 1) * 2500;
+          const wait = (attempt + 1) * 750;
           console.warn(`429 pour ${arret.label}, réessai dans ${wait / 1000}s…`);
           await sleep(wait);
           continue;

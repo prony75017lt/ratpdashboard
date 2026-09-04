@@ -246,8 +246,15 @@
     // =============================================
 
     const CONFIG = {
-      apiKey: 'pgpgISVffFr3QGGRo9w5JiP2ecn0DNOL',
-
+        // 1. Votre clé API PRIM (obligatoire)
+          apiKey: 'bKSXuKf3scUMbh0ufotHFTlMKiiEnnxf',
+      
+          
+          // 2. Liste des arrêts à surveiller
+      //    Ajoutez autant d'objets que vous avez d'arrêts à afficher.
+      //    - stopId   : identifiant MonitoringRef de l'arrêt
+      //    - label    : nom affiché sur le tableau de bord
+      //    - lineId   : (optionnel) filtre sur une ligne précise
       arrets: [
         {
           stopId: 'STIF:StopPoint:Q:22021:',

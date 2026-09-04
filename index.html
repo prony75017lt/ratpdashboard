@@ -168,6 +168,12 @@
      * Interroge l'API PRIM pour un arrêt donné
      * Documentation : https://prim.iledefrance-mobilites.fr/apis/idfm-ivtr-requete_globale
      */
+
+    function sleep(ms) {
+      // arrêt pour éviter erreur 429
+      return new Promise(resolve => setTimeout(resolve, ms));
+    } 
+    
     async function fetchPassages(arret) {
       // Construction de l'URL de l'API SIRI "Stop Monitoring"
       let url = 'https://prim.iledefrance-mobilites.fr/marketplace/'
@@ -252,56 +258,56 @@
     /**
      * Met à jour l'affichage complet
      */
-    async function updateAll() {
-      let html = '';
+async function updateAll() {
+   let html = '';
 
-      for (const arret of CONFIG.arrets) {
-        html += `<div class="stop-section"><h2>📍 ${arret.label}</h2>`;
+   for (const arret of CONFIG.arrets) {
+     html += `<div class="stop-section"><h2>📍 ${arret.label}</h2>`;
 
-        try {
-          const visits = await fetchPassages(arret);
+     try {
+       const visits = await fetchPassages(arret);
 
-          if (visits.length === 0) {
-            html += '<div class="passage">Aucun passage prévu</div>';
-          } else {
-            // Trier par heure d'arrivée et limiter
-            const parsed = visits
-              .map(parseVisit)
-              .filter(p => p.expectedTime !== null)
-              // ── Filtre directionnel (si configuré) ──
-              .filter(p => {
-                if (!arret.excludeDestinations) return true;
-                return !arret.excludeDestinations.some(
-                  excl => p.destination.includes(excl)
-                );
-              })
-              .sort((a, b) => new Date(a.expectedTime) - new Date(b.expectedTime))
-              .slice(0, CONFIG.maxPassages);
+       if (visits.length === 0) {
+         html += '<div class="passage">Aucun passage prévu</div>';
+       } else {
+         const parsed = visits
+           .map(parseVisit)
+           .filter(p => p.expectedTime !== null)
+           .filter(p => {
+             if (!arret.excludeDestinations) return true;
+             return !arret.excludeDestinations.some(
+               excl => p.destination.includes(excl)
+             );
+           })
+           .sort((a, b) => new Date(a.expectedTime) - new Date(b.expectedTime))
+           .slice(0, CONFIG.maxPassages);
 
-            for (const p of parsed) {
-              const t = tempsRestant(p.expectedTime);
-              html += `
-                <div class="passage">
-                  <span class="ligne-badge">${p.lineName}</span>
-                  <span class="direction">${p.destination}</span>
-                  <span class="temps ${t.classe}">${t.text}</span>
-                </div>`;
-            }
-          }
-        } catch (err) {
-          html += `<div class="erreur">⚠️ ${err.message}</div>`;
-          console.error(err);
-        }
+         for (const p of parsed) {
+           const t = tempsRestant(p.expectedTime);
+           html += `
+             <div class="passage">
+               <span class="ligne-badge">${p.lineName}</span>
+               <span class="direction">${p.destination}</span>
+               <span class="temps ${t.classe}">${t.text}</span>
+             </div>`;
+         }
+       }
+     } catch (err) {
+       html += `<div class="erreur">⚠️ ${err.message}</div>`;
+       console.error(err);
+     }
 
-        html += '</div>';
-      }
+     html += '</div>';
 
-      container.innerHTML = html;
+     // Pause de 2 secondes entre chaque appel pour éviter le 429
+     await sleep(2000);
+   }
 
-      // Affiche l'heure de dernière mise à jour
-      const now = new Date();
-      lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
-    }
+   container.innerHTML = html;
+
+   const now = new Date();
+   lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
+ }
 
     // =============================================
     //  ▶️  DÉMARRAGE

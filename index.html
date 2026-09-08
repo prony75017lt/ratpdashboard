@@ -111,28 +111,27 @@
     }
 
     /* ---- LINE BADGE ---- */
-    .ligne-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 0.75rem;
-      min-width: 38px;
-      text-align: center;
-      letter-spacing: 0.02em;
-      flex-shrink: 0;
-
-      .ligne-picto {
-  display: inline-block;
+.ligne-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  min-width: 28px;
   height: 28px;
-  vertical-align: middle;
   margin-right: 8px;
+  vertical-align: middle;
+  font-size: 14px;
 }
-.ligne-picto svg {
-  height: 28px;
-  width: auto;
+
+.badge-circle {
+  border-radius: 50%;
+  padding: 0 6px;
+}
+
+.badge-rect {
+  border-radius: 5px;
+  padding: 0 8px;
 }
     /* ---- DIRECTION ---- */
     .direction {
@@ -328,38 +327,21 @@
     const lastUpdateEl = document.getElementById('lastUpdate');
     const progressBar = document.getElementById('progressBar');
 
-function getLinePictogramUrl(lineRef) {
+const LINE_DISPLAY = {
+  'C01374': { name: '3',  bg: '#9B993A', text: '#FFF', shape: 'circle' },
+  'C01123': { name: '92', bg: '#1E9B4E', text: '#FFF', shape: 'rect' },
+  'C01124': { name: '93', bg: '#1E9B4E', text: '#FFF', shape: 'rect' },
+  'C01727': { name: 'C',  bg: '#FFCD00', text: '#000', shape: 'rect' },
+    'C01294': { name: '341', bg: '#1E9B4E', text: '#FFF', shape: 'rect' }
+};
+
+function getLineDisplay(lineRef) {
   if (!lineRef) return null;
   const match = lineRef.match(/STIF:Line::(\w+):/);
   if (!match) return null;
-  const code = match[1];
-  return `https://prim.iledefrance-mobilites.fr/marketplace/ilico/getIcon/${code}`;
+  return LINE_DISPLAY[match[1]] || null;
 }
-
-    function getLineShortName(lineRef) {
-  if (!lineRef) return '?';
-  const match = lineRef.match(/STIF:Line::(\w+):/);
-  return match ? match[1] : '?';
-}
-
-async function fetchLineIcon(lineRef) {
-  const url = getLinePictogramUrl(lineRef);
-  if (!url) return null;
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'image/svg+xml',
-        'apikey': CONFIG.apiKey
-      }
-    });
-    if (!response.ok) return null;
-    const svgText = await response.text();
-    return svgText;
-  } catch (e) {
-    return null;
-  }
-}
-    
+   
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -430,7 +412,7 @@ function parseVisit(visit) {
   const call = mvj?.MonitoredCall ?? {};
 
   const lineName = mvj?.PublishedLineName?.[0]?.value ?? null;
-  const lineRef  = mvj?.LineRef?.value ?? null;
+  const lineRef  = mvj?.LineRef?.value ?? null;           // ← cette ligne est essentielle
 
   const destination = mvj?.DestinationName?.[0]?.value
       ?? call?.DestinationDisplay?.[0]?.value
@@ -441,8 +423,8 @@ function parseVisit(visit) {
       ?? call?.AimedArrivalTime
       ?? null;
 
-  return { lineName, lineRef, destination, expectedTime };
-    }
+  return { lineName, lineRef, destination, expectedTime };  // ← lineRef ajouté ici
+}
 
     // ---- PROGRESS BAR LOGIC ----
     let progressAnimFrame = null;
@@ -518,15 +500,17 @@ function parseVisit(visit) {
 
 for (const p of parsed) {
   const t = tempsRestant(p.expectedTime);
-  const shortName = p.lineName || getLineShortName(p.lineRef);
-  const svgContent = await fetchLineIcon(p.lineRef);
+  const display = getLineDisplay(p.lineRef);
 
   let ligneBadge;
-  if (svgContent) {
-    ligneBadge = `<span class="ligne-picto">${svgContent}</span>`;
+  if (display) {
+    const shapeClass = display.shape === 'circle' ? 'badge-circle' : 'badge-rect';
+    ligneBadge = `<span class="ligne-badge ${shapeClass}" 
+                        style="background:${display.bg};color:${display.text}">
+                    ${display.name}
+                  </span>`;
   } else {
-    const c = getLineColor(shortName);
-    ligneBadge = `<span class="ligne-badge" style="background:${c.bg};color:${c.text}">${shortName}</span>`;
+    ligneBadge = `<span class="ligne-badge badge-rect">${p.lineName || '?'}</span>`;
   }
 
   innerHtml += `

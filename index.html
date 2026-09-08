@@ -124,7 +124,13 @@
       letter-spacing: 0.02em;
       flex-shrink: 0;
     }
-
+.ligne-picto {
+  height: 28px;
+  width: auto;
+  vertical-align: middle;
+  margin-right: 8px;
+  border-radius: 4px;
+}
     /* ---- DIRECTION ---- */
     .direction {
       flex: 1;
@@ -384,24 +390,23 @@
       return { text: `${h}h${m.toString().padStart(2, '0')}`, classe: 'comfortable' };
     }
 
-    function parseVisit(visit) {
-      const mvj = visit?.MonitoredVehicleJourney ?? {};
-      const call = mvj?.MonitoredCall ?? {};
+function parseVisit(visit) {
+  const mvj = visit?.MonitoredVehicleJourney ?? {};
+  const call = mvj?.MonitoredCall ?? {};
 
-      const lineName = mvj?.PublishedLineName?.[0]?.value
-                    ?? mvj?.LineRef?.value
-                    ?? '?';
+  const lineName = mvj?.PublishedLineName?.[0]?.value ?? null;
+  const lineRef  = mvj?.LineRef?.value ?? null;
 
-      const destination = mvj?.DestinationName?.[0]?.value
-                       ?? call?.DestinationDisplay?.[0]?.value
-                       ?? 'Direction inconnue';
+  const destination = mvj?.DestinationName?.[0]?.value
+      ?? call?.DestinationDisplay?.[0]?.value
+      ?? 'Direction inconnue';
 
-      const expectedTime = call?.ExpectedArrivalTime
-                        ?? call?.ExpectedDepartureTime
-                        ?? call?.AimedArrivalTime
-                        ?? null;
+  const expectedTime = call?.ExpectedArrivalTime
+      ?? call?.ExpectedDepartureTime
+      ?? call?.AimedArrivalTime
+      ?? null;
 
-      return { lineName, destination, expectedTime };
+  return { lineName, lineRef, destination, expectedTime };
     }
 
     // ---- PROGRESS BAR LOGIC ----
@@ -476,16 +481,28 @@
               .sort((a, b) => new Date(a.expectedTime) - new Date(b.expectedTime))
               .slice(0, CONFIG.maxPassages);
 
-            for (const p of parsed) {
-              const t = tempsRestant(p.expectedTime);
-              const c = getLineColor(p.lineName);
-              innerHtml += `
-                <div class="passage">
-                  <span class="ligne-badge" style="background:${c.bg};color:${c.text}">${p.lineName}</span>
-                  <span class="direction">${p.destination}</span>
-                  <span class="temps ${t.classe}">${t.text}</span>
-                </div>`;
-            }
+for (const p of parsed) {
+  const t = tempsRestant(p.expectedTime);
+  const pictoUrl = getLinePictogramUrl(p.lineRef);
+
+  let ligneBadge;
+  if (pictoUrl) {
+    ligneBadge = `<img class="ligne-picto" src="${pictoUrl}" 
+                       alt="${p.lineName || p.lineRef}" 
+                       onerror="this.outerHTML='<span class=\\'ligne-badge\\'>${p.lineName || '?'}</span>'"
+                  >`;
+  } else {
+    const c = getLineColor(p.lineName);
+    ligneBadge = `<span class="ligne-badge" style="background:${c.bg};color:${c.text}">${p.lineName}</span>`;
+  }
+
+  innerHtml += `
+    <div class="passage">
+      ${ligneBadge}
+      <span class="direction">${p.destination}</span>
+      <span class="temps ${t.classe}">${t.text}</span>
+    </div>`;
+}
           }
 
           section.innerHTML = innerHtml;

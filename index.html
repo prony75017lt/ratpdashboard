@@ -325,6 +325,15 @@
     const lastUpdateEl = document.getElementById('lastUpdate');
     const progressBar = document.getElementById('progressBar');
 
+function getLinePictogramUrl(lineRef) {
+  if (!lineRef) return null;
+  const match = lineRef.match(/STIF:Line::(\w+):/);
+  if (!match) return null;
+  const code = match[1];
+  return `https://prim.iledefrance-mobilites.fr/media/lines/${code}.svg`;
+}
+
+    
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     }

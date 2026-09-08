@@ -329,10 +329,10 @@
 
 const LINE_DISPLAY = {
   'C01374': { name: '3',  bg: '#9B993A', text: '#FFF', shape: 'circle' },
-  'C01123': { name: '92', bg: '#1E9B4E', text: '#FFF', shape: 'rect' },
-  'C01124': { name: '93', bg: '#1E9B4E', text: '#FFF', shape: 'rect' },
-  'C01727': { name: 'C',  bg: '#FFCD00', text: '#000', shape: 'rect' },
-    'C01294': { name: '341', bg: '#1E9B4E', text: '#FFF', shape: 'rect' }
+'C01123': { name: '92',  bg: '#DFC135', text: '#000', shape: 'rect' },
+'C01124': { name: '93',  bg: '#1E9B4E', text: '#FFF', shape: 'rect' },
+'C01727': { name: 'C',   bg: '#FFCD00', text: '#000', shape: 'rect' },
+'C01294': { name: '341', bg: '#DFC135', text: '#000', shape: 'rect' }
 };
 
 function getLineDisplay(lineRef) {
@@ -499,6 +499,7 @@ function parseVisit(visit) {
               .slice(0, CONFIG.maxPassages);
 
 for (const p of parsed) {
+  console.log('lineRef:', p.lineRef, 'lineName:', p.lineName);  // ← ligne temporaire A SUPPRIMER
   const t = tempsRestant(p.expectedTime);
   const display = getLineDisplay(p.lineRef);
 

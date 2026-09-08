@@ -539,8 +539,12 @@ for (const p of parsed) {
       }
 
       const now = new Date();
-      lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
-      startProgressBar();
+      if (lastUpdateEl) {
+  lastUpdateEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
+}
+      if (progressBar) {
+  startProgressBar();
+}
     }
 
     // =============================================
